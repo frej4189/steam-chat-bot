@@ -20,3 +20,6 @@ If you want to delete a reservation again, go to an admin account and send the m
 
 
 I am currently working on actions (block user, unblock user, invite user to group, send an offer), aswell as permissions.
+
+
+If you want to get help, or want any other programming job done, feel free to contact me at my steam profile: https://steamcommunity.com/id/jegerkatten
