@@ -1,3 +1,6 @@
+/* 
+ * Copyright (c) 2018 Frej Alexander Nielsen
+ */
 const initialTime = Date.now()
 const fs = require('fs');
 
