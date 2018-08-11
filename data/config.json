@@ -1,0 +1,7 @@
+{
+	"admins": ["STEAMID64 of an admin", "STEAMID64 of another admin", "..."],
+	"autoaccept": "true if you want the bot to auto-accept friend requests, anything else will be treated as false.",
+	"username": "Enter account username here.",
+	"password": "Enter account password here.",
+	"shared_secret": "If 2FA is enabled, enter your account's shared secret here."
+}

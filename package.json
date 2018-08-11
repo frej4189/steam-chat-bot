@@ -1,0 +1,15 @@
+{
+  "name": "steam-chat-bot",
+  "version": "1.0.0",
+  "description": "An automated chat bot which responds to certain phrases",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Frej Alexander Nielsen <frejnielsen59@gmail.com>",
+  "license": "All rights reserved",
+  "dependencies": {
+    "steam-totp": "^2.1.0",
+    "steam-user": "^3.28.1"
+  }
+}
