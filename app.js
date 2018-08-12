@@ -144,7 +144,11 @@ client.on('friendMessage', (friend, message) => {
 		}
 	} else if(removing[friend.getSteamID64()]) {
 		let remove = removing[friend.getSteamID64()][message];
-		if(remove) {
+
+		if(message == "cancel") {
+			delete removing[friend.getSteamID64()];
+			client.chatMessage("Action cancelled.");
+		} else if(remove) {
 			removeResponse(remove, error => {
 				if(error) {
 					delete removing[friend.getSteamID64()];
