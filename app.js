@@ -6,6 +6,7 @@ const fs = require('fs');
 
 const SteamUser = require('steam-user');
 const SteamTOTP = require('steam-totp');
+const SteamID = require('./validator');
 
 let client = new SteamUser({promptSteamGuardCode: false});
 let config;
@@ -83,6 +84,21 @@ const addResponse = (message, response, callback) => {
 	stream.end(JSON.stringify(responses, null, 4), error => callback(error));
 }
 
+const setAction = (obj, callback) => {
+//response, message, action, user, delayed, delay
+
+	let action = obj.action;
+
+	switch(action) {
+		case "message":
+			let message = obj.message;
+			let user = obj.user;
+
+			
+			break;
+	}
+}
+
 const removeResponse = (message, callback) => {
 	delete responses[message];
 
@@ -99,19 +115,20 @@ const strings = {};
 const adding = {};
 
 const removing = {};
+const actions = {};
 
 client.on('friendMessage', (friend, message) => {
 	if(adding[friend.getSteamID64()]) {
 		if(message == "cancel") {
 			delete adding[friend.getSteamID64()];
 			delete strings[friend.getSteamID64()];
-			client.chatMessage("Action cancelled.");
+			client.chatMessage(friend, "Action cancelled.");
 		} else {
 			switch(adding[friend.getSteamID64()]) {
 				case "message":
 					adding[friend.getSteamID64()] = "sensitive";
 					strings[friend.getSteamID64()].message = message;
-					client.chatMessage(friend, "Do you want the message to be case-sensitive? (Y/N).");
+					client.chatMessage(friend, "Do you want the message to be case-sensitive? (Y/N)");
 					break;
 				case "sensitive":
 					if(message.toUpperCase() == "Y") {
@@ -124,7 +141,7 @@ client.on('friendMessage', (friend, message) => {
 						client.chatMessage(friend, "Please enter the response that I should send to this message.");
 					} else {
 						client.chatMessage(friend, "Please only enter Y or N.");
-						client.chatMessage(friend, "Do you want the message to be case-sensitive? (Y/N).");
+						client.chatMessage(friend, "Do you want the message to be case-sensitive? (Y/N)");
 					}
 					break;
 				case "response":
@@ -137,7 +154,7 @@ client.on('friendMessage', (friend, message) => {
 
 						delete adding[friend.getSteamID64()];
 						delete strings[friend.getSteamID64()];
-						client.chatMessage(friend, "Response added.");
+						client.chatMessage(friend, "Response added, if you want further actions, type \"add action\" (no quotes).");
 					});
 					break;
 			}
@@ -147,7 +164,7 @@ client.on('friendMessage', (friend, message) => {
 
 		if(message == "cancel") {
 			delete removing[friend.getSteamID64()];
-			client.chatMessage("Action cancelled.");
+			client.chatMessage(friend, "Action cancelled.");
 		} else if(remove) {
 			removeResponse(remove, error => {
 				if(error) {
@@ -164,6 +181,71 @@ client.on('friendMessage', (friend, message) => {
 			});
 		} else
 			client.chatMessage(friend, "Invalid ID, please type a correct ID or type cancel to cancel.");
+	} else if(actions[friend.getSteamID64()]) {
+		if(message == "cancel") {
+			delete actions[friend.getSteamID64()];
+			delete strings[friend.getSteamID64()];
+			client.chatMessage(friend, "Action cancelled.");
+		} else {
+			switch(actions[friend.getSteamID64()]) {
+				case "select":
+					let response = strings[friend.getSteamID64()].responses[message];
+
+					if(response) {
+						strings[friend.getSteamID64()].response = response;
+						actions[friend.getSteamID64()] = "action";
+						client.chatMessage(friend, "What action do you want me to perform on this response? Write exactly as given in actions.txt");
+					} else
+						client.chatMessage(friend, "Invalid ID, please type a correct ID or type cancel to cancel.");
+					break;
+				case "action":
+					switch(message) {
+						case "message":
+							strings[friend.getSteamID64()].action = "message";
+							actions[friend.getSteamID64()] = "message";
+							client.chatMessage(friend, "What message should I send?");
+							break;
+					}
+					break;
+				case "message":
+					strings[friend.getSteamID64()].message = message;
+					actions[friend.getSteamID64()] = "user";
+					client.chatMessage(friend, "To whom should this message be sent? Give either a SteamID64, or one of the following strings: admins, user");
+					break;
+				case "user":
+					if(isNaN(user) && user != "admins" && user != "user") {
+						client.chatMessage(friend, "Invalid user format.");
+						client.chatMessage(friend, "To whom should this message be sent? Give either a SteamID64, or one of the following strings: admins, user");
+					} else {
+						strings[friend.getSteamID64()].user = user;
+						actions[friend.getSteamID64()] = "delayed";
+						client.chatMessage(friend, "Should this action be delayed? (Y/N)");
+					}
+					break;
+				case "delayed":
+					if(message.toUpperCase() == "Y") {
+						actions[friend.getSteamID64()] = "delay";
+						strings[friend.getSteamID64()].delayed = true;
+						client.chatMessage(friend, "How much should the delay be in seconds?");+
+					} else if(message.toUpperCase() == "N") {
+						actions[friend.getSteamID64()] = "response";
+						strings[friend.getSteamID64()].delayed = false;
+						addAction(strings[friend.getSteamID64()], error => {
+							delete actions[friend.getSteamID64()];
+							delete strings[friend.getSteamID64()];
+							if(error) {
+								client.chatMessage(friend, "An error occurred while attempting to add action \"" + strings[friend.getSteamID64()].action + "\", please try again later.");
+							} else {
+								client.chatMessage(friend, "Action added.");
+							}
+						});
+					} else {
+						client.chatMessage(friend, "Please only enter Y or N.");
+						client.chatMessage(friend, "Should this action be delayed? (Y/N)");
+					}
+					break;
+			}
+		}
 	} else {
 		let content = responses[message.toLowerCase()];
 
@@ -206,6 +288,32 @@ client.on('friendMessage', (friend, message) => {
 
 					removing[friend.getSteamID64()] = obj;
 					client.chatMessage(friend, "If at anytime you want to cancel, simply type cancel.");
+					client.chatMessage(friend, send);
+				} else if(isAdmin(friend.getSteamID64()) && message.toLowerCase() == "add action") {
+					let obj = {};
+					let count = 0;
+					let send = "Please type the ID of the response to add an action on:\n";
+					for(let message in responses) {
+						if(responses.hasOwnProperty(message)) {
+							count++;
+
+							let info = message;
+							if(message.startsWith("MATCH "))
+								info = message.substring(6);
+
+							obj[count.toString()] = message;
+							send += count.toString() + ": " + info + "\n";
+						}
+					}
+
+					if(count <= 0)
+						return client.chatMessage(friend, "There are currently no responses, type \"add response\" (no quotes) to get started.");
+
+					actions[friend.getSteamID64()] = "select";
+					strings[friend.getSteamID64()] = {
+						responses: obj
+					};
+
 					client.chatMessage(friend, send);
 				}
 			}
