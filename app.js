@@ -226,7 +226,7 @@ client.on('friendMessage', (friend, message) => {
 					if(message.toUpperCase() == "Y") {
 						actions[friend.getSteamID64()] = "delay";
 						strings[friend.getSteamID64()].delayed = true;
-						client.chatMessage(friend, "How much should the delay be in seconds?");+
+						client.chatMessage(friend, "How much should the delay be in seconds?");
 					} else if(message.toUpperCase() == "N") {
 						actions[friend.getSteamID64()] = "response";
 						strings[friend.getSteamID64()].delayed = false;
