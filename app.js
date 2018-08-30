@@ -6,7 +6,6 @@ const fs = require('fs');
 
 const SteamUser = require('steam-user');
 const SteamTOTP = require('steam-totp');
-const SteamID = require('./validator');
 
 let client = new SteamUser({promptSteamGuardCode: false});
 let config;
